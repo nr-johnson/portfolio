@@ -50,7 +50,7 @@ app.get('*', async (req, res) => {
 
 
 // Server ---
-const PORT = process.env.PORT || 8000
+const PORT = process.env.PORT || 8500
 const server = http.createServer(app)
 
 server.listen(PORT, () => { console.log(`${pkg.name} running on port ${PORT}`) })

@@ -30,12 +30,12 @@ function siteOps() {
         // All data for GET requests are retrieved and compiled in this function.
         req.getHTML = route => {
             const pages = `${req.root}/views/pages`
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
 
                 if(!fs.existsSync(`${pages}${route}.pug`)) reject({err: 404})
                 
                 try {
-                    const data = getData(route)
+                    const data = await getData(route)
                     const html = pug.renderFile(`${pages}${route}.pug`, {
                         data: data
                     })
