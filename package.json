@@ -1,0 +1,24 @@
+{
+  "name": "portfolio",
+  "version": "1.0.0",
+  "description": "My web portfolio",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nr-johnson/portfolio.git"
+  },
+  "author": "NRJohnson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nr-johnson/portfolio/issues"
+  },
+  "homepage": "https://github.com/nr-johnson/portfolio#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "nodemon": "^2.0.19",
+    "pug": "^3.0.2"
+  }
+}
