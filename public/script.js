@@ -1,15 +1,33 @@
+// Adds page state to browser history
+function addToHistory(route) {
+    // If the current state is different than the previous, the new state is added to history
+    // It also changes the current url (pushState third param), which allows the user to refresh the page without returning to the home page.
+    history.state != route && history.pushState(route, null, route)
+}
+
+// Takes over browser back button
+window.addEventListener('popstate', (e) => {
+    const loc = history.state;
+    // Changes page data if item was added to history, else it's allowed to navigate back in it's defualt way.
+    loc ? navigate(e, loc) : window.history.back()
+});
+
 const redirs = document.querySelectorAll('.page-redir')
 redirs.length > 0 && redirs.forEach(link => {
     link.addEventListener('click', event => {
-        event.preventDefault()
-        navigate(link.href)
+        navigate(event, new URL(link.href).pathname)
     })
 })
 
-async function navigate(route) {
+async function navigate(event, route) {
+    event && event.preventDefault()
+    const url = new URL(window.location)
+    if(url.pathname == route) return
+
     const main = document.getElementById('main')
-    await getHTML(route).then(html => {
+    await getHTML('https://' + url.hostname + route).then(html => {
         main.innerHTML = html.html
+        addToHistory(location.pathname)
     }).catch(err => {
         main.innerHTML = err
     })
