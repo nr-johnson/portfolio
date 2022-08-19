@@ -12,6 +12,7 @@ const app = express()
 
 app.use((req, res, next) => {
     req.root = __dirname
+    req.env = process.env.ENV || 'development'
     next()
 })
 
@@ -44,7 +45,10 @@ app.get('*', async (req, res) => {
             })
         }
     }).catch(err => {
-        res.status(500).json(err)
+        res.status(err.status || 500).render('main', {
+            title: `Error ${err.status || 500}`,
+            html: err
+        })
     })
 })
 
