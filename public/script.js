@@ -1,17 +1,3 @@
-// Adds page state to browser history
-function addToHistory(route) {
-    // If the current state is different than the previous, the new state is added to history
-    // It also changes the current url (pushState third param), which allows the user to refresh the page without returning to the home page.
-    history.state != route && history.pushState(route, null, route)
-}
-
-// Takes over browser back button
-window.addEventListener('popstate', (e) => {
-    const loc = history.state;
-    // Changes page data if item was added to history, else it's allowed to navigate back in it's defualt way.
-    loc ? navigate(e, loc) : window.history.back()
-});
-
 const redirs = document.querySelectorAll('.page-redir')
 redirs.length > 0 && redirs.forEach(link => {
     link.addEventListener('click', event => {
@@ -20,14 +6,19 @@ redirs.length > 0 && redirs.forEach(link => {
 })
 
 async function navigate(event, route) {
-    event && event.preventDefault()
     const url = new URL(window.location)
-    if(url.pathname == route) return
+    if(event) {
+         event.preventDefault()
+    } else if(url.pathname == route) return
+
+    console.log('hello ' + route)
 
     const main = document.getElementById('main')
+    console.log('navigating to: https://' + url.hostname + route)
     await getHTML('https://' + url.hostname + route).then(html => {
         main.innerHTML = html.html
-        addToHistory(location.pathname)
+        addToHistory(route)
+        setLinkEvents()
     }).catch(err => {
         main.innerHTML = err
     })
@@ -73,4 +64,32 @@ function serverRequest(url, method, data) {
             xhttp.send()
         }
     })
+}
+
+// Highjacks the functionality of all links so the data can be loaded without loading a new page (discount react).
+setLinkEvents()
+function setLinkEvents() {
+    document.querySelectorAll('.page-redir').forEach(link => {
+        link.addEventListener('click', (event) => {
+            navigate(null, new URL(link.href).pathname) // Changes the page, second variable is the url path
+            event.preventDefault() // Prevent link from navigating the page.
+        })
+    })
+}
+
+// Takes over browser back button
+window.addEventListener('popstate', (e) => {
+    const location = history.state;
+    // Changes page data if item was added to history, else it's allowed to navigate back in it's defualt way.
+    console.log('Routing to ' + location)
+    location ? navigate(e, location) : window.history.back()
+});
+
+// Adds page state to browser history
+function addToHistory(route) {
+    // If the current state is different than the previous, the new state is added to history
+    // It also changes the current url (pushState third param), which allows the user to refresh the page without returning to the home page.
+    history.state != route && history.pushState(route, null, route)
+    console.log(history.state + ' added to history.')
+    
 }
