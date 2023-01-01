@@ -1,6 +1,6 @@
 const pug = require('pug')
 const fs = require('fs')
-const axios = require('axios')
+const dataRoutes = require('./routeData')
 
 class Error404 extends Error {
     constructor(url) {
@@ -10,37 +10,10 @@ class Error404 extends Error {
     }
 }
 
-// I didn't need to get data from the database very much, so I handled all data retrieval here witha switch.
-// Data is retrieved using my API.
-function getData(route) {
-    return new Promise((resolve, reject) => {
-        // Create axios client to communicate with API
-        const client = axios.create({
-            baseURL: process.env.API_URL
-        })
-        
-        switch (route) {
-            case '/home':
-                // Gets data from API and returns it.
-                client.get('/web?publish=true').then(resp => {
-                    if(resp.data.length < 1) reject(new Error('API query returned no results.')) // If data is empty, return an error.
-                    resolve(resp.data[0])
-                }).catch(err => {
-                    reject(err)
-                })
-                break
-            default:
-                // A lack of a case isn't neccessarily an error, so it returns an empty object.
-                resolve({})
-        }
-    })
-    
-}
-
 function siteOps() {
     return (req, res, next) => {
         // All data for GET requests are retrieved and compiled in this function.
-        req.getHTML = route => {
+        req.getHTML = (route, query) => {
             const pages = `${req.root}/views/pages` // All views
             return new Promise(async (resolve, reject) => {
 
@@ -55,13 +28,22 @@ function siteOps() {
                     }))
                 }
                 
+
+
                 // If page exists, return rendered HTML
                 try {
-                    const data = await getData(route) // Gets any data needed from the database
-                    const html = pug.renderFile(`${pages}${route}.pug`, { // Renders the html.
+                    let data = dataRoutes[route.split('/').join('')]
+                    typeof data == 'function' ? data = await data(query) : data = {}
+
+                    // Renders the html.
+                    pug.renderFile(`${pages}${route}.pug`, { 
                         data: data
+                    }, (err, html) => {
+                        err ? reject(pug.renderFile(`${pages}/error.pug`, {
+                            error: err
+                        })) : resolve(html)
                     })
-                    resolve(html)
+
                 } catch(err) { // If error rendering html, return that error
                     const error = new Error(err)
                     error.status = 500
