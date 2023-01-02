@@ -9,15 +9,18 @@ window.addEventListener('resize', () => {
     document.documentElement.style.setProperty('--vh', vh + `px`);
 });
 
+addToHistory(new URL(window.location).pathname)
+
 async function navigate(event, route) {
     if (!canNavigate) return
-
+    
     canNavigate = false
     const url = new URL(window.location)
-    if(event) {
-         event.preventDefault()
-    } else if(url.pathname == route) return
 
+    if(event) {
+        event.preventDefault()
+    } else if(url.pathname == route) return
+    
     const canvas = document.getElementById('canvas')
     const main = document.getElementById('main')
 
@@ -27,7 +30,7 @@ async function navigate(event, route) {
     const newMain = document.createElement('main')
     newMain.id = 'main'
     newMain.style.opacity = 0
-
+    
     const pageSlideDirection = getPageSlideDirection(route)
     
     main.style.transform = `translateX(${100 * (pageSlideDirection * -1)}vw)`
@@ -38,12 +41,12 @@ async function navigate(event, route) {
     newMain.style.transform = `translateX(${100 * pageSlideDirection}vw)`
 
     setSelectedLinks(route)
-
     window.setTimeout(async () => {
         const body = main.parentNode
         stopped = true
         body.removeChild(main)
         body.removeChild(canvas)
+        effect = null
 
         body.insertBefore(newMain, body.children[0])
         body.insertBefore(newCanvas, body.children[body.children.length - 1])
@@ -55,7 +58,7 @@ async function navigate(event, route) {
             newMain.innerHTML = html.html
             document.getElementById('body').setAttribute('data-location', route.replace(/\//g,""))
 
-            loadParticles(pageSlideDirection)
+            loadParticles()
 
             addToHistory(route)
             setLinkEvents()
@@ -206,7 +209,24 @@ function addToHistory(route) {
     // If the current state is different than the previous, the new state is added to history
     // It also changes the current url (pushState third param), which allows the user to refresh the page without returning to the home page.
     history.state != route && history.pushState(route, null, route)
-    
+}
+
+
+function getNextPage(previousPage) {
+    const currentPage = document.querySelector('.pageSelected')
+    const navDom = currentPage.parentNode
+    const navIndex = Array.from(navDom.children).indexOf(currentPage)
+
+
+    if (previousPage) {
+        if (navIndex < navDom.children.length - 2) return null
+
+        return new URL (navDom.children[navIndex + 1].href).pathname
+    }
+
+    if (navIndex == 0) return null
+
+    return  new URL (navDom.children[navIndex - 1].href).pathname
 }
 
 let scrollAmount = 0
@@ -281,7 +301,13 @@ window.addEventListener('wheel', ({ wheelDeltaY }) => {
         selectors.forEach(selector => {
             selector.style.transform = `translateX(${(scrollAmount * 1.5) * -1}px)`
         })
-        effect.move(scrollAmount)
+        if (effect.basic) {
+            const canvas = document.getElementById('canvas')
+            canvas.style.transform = `translateX(${scrollAmount * 1.5}%)`
+        } else {
+            effect.move(scrollAmount) 
+        }
+        
     }
     
 })

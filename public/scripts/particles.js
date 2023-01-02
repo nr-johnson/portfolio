@@ -25,8 +25,8 @@ function loadParticles(direction) {
     constructor({ effect, vector, color }) {
         this.effect = effect
         this.vector = {
-            x: this.effect.direction == 0 ? vector.x + Math.random() * 0.7 + 0.15 : vector.x + (100 * this.effect.direction),
-            y: this.effect.placementY,
+            x: vector.x,
+            y: vector.y
         }
         this.tempOrigin = {
             x: vector.x,
@@ -64,35 +64,40 @@ function loadParticles(direction) {
         this.effect.context.fillRect(this.vector.x, this.vector.y, this.size, this.size)
     }
     update() {
-        const colorValues = this.color.substring(4, this.color.indexOf(')')).split(',').map(color => { return parseInt(color) })
-        const baseColorValues = this.baseColor.substring(4, this.baseColor.indexOf(')')).split(',').map(color => { return parseInt(color) })
-
-        
 
         this.distanceVector = {
             x: this.effect.mouse.x - this.vector.x,
             y: this.effect.mouse.y - this.vector.y
         }
         this.distance = this.distanceVector.x * this.distanceVector.x + this.distanceVector.y * this.distanceVector.y
-        this.force = -this.effect.mouse.radius / this.distance
 
-        
+        const proximityCheck = this.distance < (Math.random() * .8 + .5) * this.effect.mouse.radius
+
+        if (this.vector.x == this.origin.x && this.vector.y == this.origin.y && !proximityCheck && this.velocity.x == 0 && this.velocity.y == 0) {
+            this.color = this.baseColor
+            return
+        }
         
 
-        if (this.distance < this.effect.mouse.radius) {
+        const colorValues = this.color.substring(4, this.color.indexOf(')')).split(',').map(color => { return parseInt(color) })
+        const baseColorValues = this.baseColor.substring(4, this.baseColor.indexOf(')')).split(',').map(color => { return parseInt(color) })
+
+        if (proximityCheck) {
+            this.force = -this.effect.mouse.radius / this.distance 
+            this.effect.doPulse = false
             this.angle = Math.atan2(this.distanceVector.y, this.distanceVector.x)
-            this.velocity.x += (Math.random() * .1 + 1.5) * this.force * Math.cos(this.angle)
-            this.velocity.y += (Math.random() * .1 + 1.5) * this.force * Math.sin(this.angle)
+            this.velocity.x += this.force * Math.cos(this.angle)
+            this.velocity.y += this.force * Math.sin(this.angle)
 
             colorValues[0] = colorValues[1] < 255 ? colorValues[0] += 75 * this.ease : 0
             colorValues[1] = colorValues[1] > 0 ? colorValues[1] -= 75 * this.ease : 0
             colorValues[2] = colorValues[2] > 0 ? colorValues[2] -= 75 * this.ease : 255
 
-        } else {
-            colorValues[0] += (baseColorValues[0] - colorValues[0]) * (this.ease / 1.5)
-            colorValues[1] += (baseColorValues[1] - colorValues[1]) * (this.ease / 1.5)
-            colorValues[2] += (baseColorValues[2] - colorValues[2]) * (this.ease / 1.5)
         }
+
+        colorValues[0] += (baseColorValues[0] - colorValues[0]) * (this.ease / 1.5)
+        colorValues[1] += (baseColorValues[1] - colorValues[1]) * (this.ease / 1.5)
+        colorValues[2] += (baseColorValues[2] - colorValues[2]) * (this.ease / 1.5)
 
         this.color = `rgb(${colorValues[0]},${colorValues[1]},${colorValues[2]})`
 
@@ -108,9 +113,8 @@ function loadParticles(direction) {
             this.canvasHeight = canvasHeight
 
             this.pageTitle = pageTitle
-
-            this.fontSize = parseInt(this.pageTitle.getAttribute('data-fontSize')) * this.canvasWidth / 100
-            
+            this.doPulse = true
+            this.fontSize = parseInt(this.pageTitle.getAttribute('data-fontSize')) * this.canvasWidth / 100            
 
             this.lineHeight = this.fontSize * 1
             this.maxTextWidth = this.canvasWidth * .8
@@ -131,8 +135,10 @@ function loadParticles(direction) {
 
             // Text Particles
             this.particles = []
-            this.gap = this.providedGap ? parseInt(this.providedGap) : 3
-            this.size = this.providedSize ? parseInt(this.providedSize) : 2
+            this.basic = false
+            this.maxed = false
+            this.gap = 2
+            this.size = 2
             
             this.mouse = {
                 radius: 5000,
@@ -150,7 +156,15 @@ function loadParticles(direction) {
 
             window.addEventListener('mousemove', e => {
                 this.mouse.x = e.x
-                this.mouse.y = e.y
+                this.mouse.y = e.y + window.pageYOffset
+            })
+            window.addEventListener('touchmove', e => {
+                this.mouse.x = e.touches[0].clientX
+                this.mouse.y = e.touches[0].clientY + window.pageYOffset
+            })
+            window.addEventListener('touchend', e => {
+                this.mouse.x = 0
+                this.mouse.y = 0
             })
             window.addEventListener('wheel', e => {
                 this.mouse.x = e.clientX
@@ -158,9 +172,43 @@ function loadParticles(direction) {
             })
 
             this.direction = direction
+            this.textArray = []
             
         }
+        setAnimationComplexity(changeBy) {
+            if (changeBy > 0 && !this.maxed) {
+                this.gap > 1 ? this.gap-- : this.maxed = true
+                if (this.gap == 2) {
+                    this.size = 1
+                } else if (this.size > 1) {
+                    this.size--
+                }
+                this.basic = false
+            } else if (!this.basic) {
+                this.gap < 3 ? this.gap++ : this.basic = true
+                this.size < 3 && this.size++
+                this.maxed = false
+            }
+            if (!this.basic && !this.maxed) {
+                this.stopped = true
+                this.reset()
+            }
+        }
+        pulse() {
+            const y = this.vector.y
+            const x = this.vector.x
+            this.particles.forEach(particle => {
+
+                particle.color = `rgb(220,50,50)`
+
+                particle.velocity.x += -(x - particle.vector.x) / 30 + (Math.random() * .1 + .05)
+                particle.velocity.y += -(y - particle.vector.y) / 30 + (Math.random() * .1 + .05)
+            })
+        }
+
         wrapText() {
+            console.log('running')
+            // this.stopped = false
             this.pageTitle.classList.add('d-none')
             // Canvas Settings
             
@@ -170,7 +218,7 @@ function loadParticles(direction) {
             this.context.textBaseline = 'middle'
 
             // Multiline break
-            let linesArray = []
+            this.textArray = []
             let words = this.text.split(' ')
             let lineCounter = 0
             let line = ''
@@ -183,16 +231,19 @@ function loadParticles(direction) {
                 } else {
                     line = testLine
                 }
-                linesArray[lineCounter] = line
+                this.textArray[lineCounter] = line
             }
             let textHeight = this.lineHeight * lineCounter
             this.vector.y = this.placementY - textHeight/2
             
-            linesArray.forEach((el, index) => {
-                this.context.fillText(el, this.vector.x, this.vector.y + (index * this.lineHeight))
-            })
+            this.drawText()
 
             this.convertToParticles()
+        }
+        drawText() {
+            this.textArray.forEach((el, index) => {
+                this.context.fillText(el, this.vector.x, this.vector.y + (index * this.lineHeight))
+            })
         }
         convertToParticles() {
             this.particles = []
@@ -218,12 +269,15 @@ function loadParticles(direction) {
             }
         }
         render() {
-            let previousColor = 'rgb(0,0,0)'
-            this.particles.forEach(particle => {
-                particle.update()
-                particle.draw(previousColor)
-                previousColor = particle.color
-            })
+            if (this.basic) {
+                this.drawText()
+            } else {
+                this.particles.forEach(particle => {
+                    particle.update()
+                    particle.draw(particle.color)
+                })
+            }
+            
         }
         move(amount) { 
             this.particles.forEach(particle => {
@@ -257,23 +311,55 @@ function loadParticles(direction) {
         }
     }
 
-
-   effect = new Effect({context: ctx, canvasWidth: canvas.width, canvasHeight: canvas.height, pageTitle, direction})
-   effect.wrapText()
+    effect = new Effect({context: ctx, canvasWidth: canvas.width, canvasHeight: canvas.height, pageTitle, direction})
+    effect.wrapText()
    
+    let lastFrame = +new Date()
+    let speedCheckCount = 0
 
+    let slowFrameCount = 0
+    let fastFrameCount = 0
     function animate() {
-        window.setTimeout(() => {
-            ctx.clearRect(0,0,canvas.width, canvas.height)
-            effect.render()
-            if(!stopped) {
-                requestAnimationFrame(animate)
+        if (!effect) return
+
+        lastFrame = +new Date()
+        ctx.clearRect(0,0,canvas.width, canvas.height)
+        effect.render()
+
+        const animationTime = +new Date() - lastFrame
+        if (animationTime > 50 && !effect.basic) {
+            if (slowFrameCount > 8) {
+                effect.setAnimationComplexity(-1)
             }
+            fastFrameCount = 0
+            slowFrameCount++
+        } else {
+            if (animationTime < 8 && !effect.maxed && speedCheckCount < 100) {
+                if (fastFrameCount > 10) {
+                    effect.setAnimationComplexity(+1)
+                }
+                fastFrameCount++
+            }
+            slowFrameCount = 0
+        }
+        speedCheckCount < 100 && speedCheckCount++
+        
+        
+        
+
+        if(!stopped || !this.basic) {
+            requestAnimationFrame(animate)
+        }
+        window.setTimeout(() => {
+            
             
         }, 1000 / frameRate)
-        
     }
     animate()
+
+    window.setTimeout(() => {
+        effect.doPulse && effect.pulse()
+    }, 3000)
 
     function resetCanvas() {
         canvas.height = window.innerHeight
