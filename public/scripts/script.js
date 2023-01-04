@@ -19,7 +19,10 @@ async function navigate(event, route) {
 
     if(event) {
         event.preventDefault()
-    } else if(url.pathname == route) return
+    } else if(url.pathname == route) {
+        canNavigate = true
+        return
+    }
     
     const canvas = document.getElementById('canvas')
     const main = document.getElementById('main')
@@ -43,26 +46,32 @@ async function navigate(event, route) {
     setSelectedLinks(route)
     window.setTimeout(async () => {
         const body = main.parentNode
+        
         stopped = true
+
         body.removeChild(main)
         body.removeChild(canvas)
+
         effect = null
 
         body.insertBefore(newMain, body.children[0])
         body.insertBefore(newCanvas, body.children[body.children.length - 1])
 
         console.log('navigating to: https://' + url.hostname + route)
+
         await getHTML('https://' + url.hostname + route).then(html => {
             const title = route.split('/').map(word => { return word.substring(0,1).toUpperCase() + word.substring(1) }).join(' ')
             document.title = title == ' ' ? 'Home' : title
             newMain.innerHTML = html.html
             document.getElementById('body').setAttribute('data-location', route.replace(/\//g,""))
+            body.classList.remove('mobile-toggled')
 
-            loadParticles()
-
+            setScrollHint()
             addToHistory(route)
             setLinkEvents()
             setScrollBarSize()
+            enableEmailLink()
+
             const selectors = document.querySelectorAll('.pageSelector')
             selectors.forEach(selector => {
                 selector.style.transform = 'translateX(0)'
@@ -71,6 +80,8 @@ async function navigate(event, route) {
             canNavigate = true
             newMain.style.opacity = 1
             newMain.style.transform = 'translateX(0)'
+            revealItems(pageSlideDirection < 0 ? true : false)
+            loadParticles()
         }).catch(err => {
             main.innerHTML = err
         })
@@ -78,6 +89,24 @@ async function navigate(event, route) {
 
     
 }
+
+function enableEmailLink() {
+    const contactInfo = document.getElementById('contactInfo')
+
+    if (!contactInfo) return
+
+    const link = contactInfo.children[1]
+        span = contactInfo.children[2]
+        user = 'contact'
+        domain = 'nrjohnson.net'
+        ref = `${user}@${domain}`
+    
+    link.href = `mailto: ${ref}`
+    link.innerHTML = ref 
+    span.classList.add('d-none')
+    link.classList.remove('d-none')
+}
+enableEmailLink()
 
 function getPageSlideDirection(route) {
     const currentPage = document.querySelector('.pageSelected')
@@ -164,23 +193,21 @@ function setLinkEvents() {
         link.addEventListener('click', async e => {
             e.preventDefault()
 
-            const element = await getElement(`/elements/panel?data=true&_id=${link.getAttribute('data-id')}`)
-
-            const body = document.getElementById('body')
-
-            const div = document.createElement('div')
-            div.innerHTML = element.html
-
-            const panel = div.children[0]            
-
-            body.append(panel)
+            const panel = document.getElementById(link.getAttribute('data-id'))
             panel.classList.add('show')
-
             canNavigate = false
 
-            panel.querySelector('.background').addEventListener('click', () => {
+            const deskNav = document.getElementById('desktopNav')
+            const mobileNav = document.getElementById('mobileNav')
+
+            deskNav.classList.add('fade')
+            mobileNav.classList.add('fade')
+
+            panel.querySelector('.background').addEventListener('click', e => {
+                e.preventDefault()
                 panel.classList.remove('show')
-                body.removeChild(panel)
+                deskNav.classList.remove('fade')
+                mobileNav.classList.remove('fade')
                 canNavigate = true
             })
         })
@@ -301,6 +328,7 @@ window.addEventListener('wheel', ({ wheelDeltaY }) => {
         selectors.forEach(selector => {
             selector.style.transform = `translateX(${(scrollAmount * 1.5) * -1}px)`
         })
+        if (!effect) return
         if (effect.basic) {
             const canvas = document.getElementById('canvas')
             canvas.style.transform = `translateX(${scrollAmount * 1.5}%)`
@@ -334,7 +362,28 @@ function toggleMobileMenu(close) {
     close ? main.classList.remove('mobile-toggled') : main.classList.toggle('mobile-toggled')
 }
 
-setScrollBarSize()
+// reveals page items with animation
+function revealItems(left) {
+    const animationElements = document.querySelectorAll('.animation')
+    animationElements.forEach(el => {
+        el.classList.add('hide')
+
+        const elementRect = el.getBoundingClientRect()
+        
+        left && el.classList.add('left')
+
+        setTimeout(() => {
+            if (elementRect.y < window.pageYOffset + window.innerHeight) {
+                el.classList.remove('hide')
+            } else {
+                el.classList.add('hide')
+            }
+        }, 50)
+        
+    })
+}
+revealItems()
+
 function setScrollBarSize() {
     const body = document.body
     const html = document.documentElement
@@ -353,6 +402,9 @@ function setScrollBarSize() {
     scrollBar.style.height = `calc((var(--vh, 1vh) * ${windowHeightPercentage}) - 10px)`
     scrollBar.style.opacity = .5
 }
+window.setTimeout(() => {
+    enableEmailLink()
+}, 50)
 
 setScrollBarPosition()
 function setScrollBarPosition() {
@@ -365,8 +417,17 @@ function setScrollBarPosition() {
 
     const windoOffsetPercantage = (window.pageYOffset / documentHeight) * 100
 
+    html.classList.add('hiddenScroll')
+
     scrollBar.style.top =  `calc((var(--vh, 1vh) * ${windoOffsetPercantage}) + 4px)`
 }
+
+function setScrollHint() {
+    const scrollHintText = document.getElementById('scrollHintText')
+    scrollHintText ? scrollHintText.textContent = 'Scroll Down to View Portfolio' : null
+}
+setScrollHint()
+
 
 window.addEventListener('resize', () => {
     setScrollBarSize()
@@ -377,6 +438,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('scroll', () => {
     setScrollBarSize()
     setScrollBarPosition()
+    revealItems()
 })
 
 window.addEventListener('touchstart', () => {

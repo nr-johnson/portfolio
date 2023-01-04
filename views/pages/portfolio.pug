@@ -1,11 +1,11 @@
-h1#pageTitle(data-x='50' data-y='12' data-fontSize='5' data-gap='2' data-size='1') My Portfolio
-section(class='container pt-5')
-    div(class='row mt-5')
+h1#pageTitle(data-x='50' data-y='12' data-fontSize='5' data-gap='2' data-size='2') My Portfolio
+section(class='container')
+    div(class='row')
         div(class='col')
             header(class='mb-4')
                 a(href="#" class='plain mobile-button light') View My Full Resume 
 
-            section(class='row work-items cascade')
+            section(class='row work-items animation shift')
                 for item in data 
                     div(class='col-12 col-md-4 mb-4')
                         div(class='panel')
@@ -15,6 +15,9 @@ section(class='container pt-5')
                                 img(src=item.image, alt='NRJohnson - ' + item.title)
                             p= item.statement
                             div(class='col-12 p-2 pb-md-4')
-                                a(class='panel-link plain mobile-button light w-100' data-id=item._id) View Details
+                                a(class='panel-link plain mobile-button light w-100' href="#" + item._id data-id=item._id) View Details
+
+for item in data
+    include ../includes/panel.pug
                     
         

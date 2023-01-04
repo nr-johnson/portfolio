@@ -41,6 +41,7 @@ app.get('*', async (req, res) => {
             res.render('main', {
                 title: 'NRJohnson | ' + (loc[loc.length - 1].substring(0,1).toLocaleUpperCase() + loc[loc.length - 1].substring(1)),
                 page: parsedUrl.pathname.replace(/\//g,""),
+                pages: ['','portfolio','about','contact'],
                 html: html
             })
         }

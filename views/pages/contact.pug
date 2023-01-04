@@ -1,3 +1,21 @@
-h1#pageTitle(data-x='50' data-y='12' data-fontSize='5' data-gap='2' data-size='1') Contact Me
-a(class='page-redir' href='/') Home
-a(class='page-redir' href='/work') Work
+h1#pageTitle(data-x='50' data-y='12' data-fontSize='5' data-gap='2' data-size='2') Contact Me
+section(class='container')            
+    form(action="/contact" method='POST' class='row mt-2 justify-content-center')
+        div#contactInfo(class='col-12 col-md-6 mx-auto')
+            span Email me at: 
+            a(class='d-none' href="mailto:")
+            <span>con<!-- botdefence -->tact<!-- botdefence -->@<!-- botdefence -->nrjohnson<!-- botdefence -->.net</span> 
+        
+        div(class='d-none d-md-block col-12')
+        div(class='col-12 col-md-6 mx-auto input-item mt-2')
+            label(for='name' class='w-100') Name:
+            input(type="text" name='name' class='w-100')
+        div(class='d-none d-md-block col-12')
+        div(class='col-12 col-md-6 mx-auto input-item mt-2')
+            label(for='email' class='w-100') Email:
+            input(type="email" name='email' class='w-100') 
+        div(class='d-none d-md-block col-12')
+        div(class='col-12 col-md-6 mx-auto input-item mt-2')
+            label(for='message' class='w-100') Message:
+            br
+            textarea(name="message" class='w-100') 

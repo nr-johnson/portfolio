@@ -1,6 +1,7 @@
 let effect
 let frameRate = 45
 let stopped = false
+let fontRoute = '/fonts/Megrim-Regular.ttf'
 
 function loadParticles(direction) {
     stopped = false
@@ -22,88 +23,111 @@ function loadParticles(direction) {
     canvas.style.transform = `translateX(0)`
 
     class Particle {
-    constructor({ effect, vector, color }) {
-        this.effect = effect
-        this.vector = {
-            x: vector.x,
-            y: vector.y
+        constructor({ effect, vector }) {
+            this.effect = effect
+            this.vector = {
+                x: vector.x,
+                y: vector.y
+            }
+            this.tempOrigin = {
+                x: vector.x,
+                y: vector.y
+            }
+            this.origin = {
+                x: vector.x,
+                y: vector.y
+            }
+            this.color = 'rgb(206,127,16)'
+            this.baseColor = 'rgb(206,127,16)'
+            this.size = this.effect.size
+
+            // position relative to mouse
+            this.distanceVector = {
+                x: 0,
+                y: 0
+            }
+
+            this.velocity = {
+                x: 0,
+                y: 0
+            }
+
+            this.force = 0
+            this.angle = 0
+            this.distance = 0
+            this.animPointDistance = 0
+
+            this.friction = Math.random() * 0.6 + 0.15
+            this.ease = Math.random() * .1 + 0.05
+            
         }
-        this.tempOrigin = {
-            x: vector.x,
-            y: vector.y
+        draw() {
+            this.effect.context.fillStyle = this.color
+            this.effect.context.fillRect(this.vector.x, this.vector.y, this.size, this.size)
         }
-        this.origin = {
-            x: vector.x,
-            y: vector.y
+        update() {
+            this.distanceVector = {
+                x: this.effect.mouse.x - this.vector.x,
+                y: this.effect.mouse.y - this.vector.y
+            }
+            this.animPointDistanceVector = {
+                x: this.effect.animPoint.x - this.vector.x,
+                y: this.effect.animPoint.y - this.vector.y
+            }
+
+            this.distance = this.distanceVector.x * this.distanceVector.x + this.distanceVector.y * this.distanceVector.y
+            
+            this.animPointDistance = this.animPointDistanceVector.x * this.animPointDistanceVector.x + this.animPointDistanceVector.y * this.animPointDistanceVector.y
+
+            const detectionRadius = (Math.random() * .8 + .5) * this.effect.mouse.radius
+
+            const proximityCheck = this.distance < detectionRadius
+            const animPointDistanceCheck = this.animPointDistance < detectionRadius
+
+            if (this.vector.x == this.origin.x && this.vector.y == this.origin.y && this.velocity.x == 0 && this.velocity.y == 0 && !proximityCheck && !animPointDistanceCheck) {
+                this.color = this.baseColor
+                return
+            }
+            
+
+            const colorValues = this.color.substring(4, this.color.indexOf(')')).split(',').map(color => { return parseInt(color) })
+            const baseColorValues = this.baseColor.substring(4, this.baseColor.indexOf(')')).split(',').map(color => { return parseInt(color) })
+
+            if (proximityCheck || animPointDistanceCheck) {
+                this.force = -this.effect.mouse.radius / this.distance 
+
+                colorValues[0] = colorValues[1] < 255 ? colorValues[0] += 75 * this.ease : 0
+                colorValues[1] = colorValues[1] > 0 ? colorValues[1] -= 75 * this.ease : 0
+                colorValues[2] = colorValues[2] > 0 ? colorValues[2] -= 75 * this.ease : 255
+            }
+
+            if (animPointDistanceCheck) {
+                this.force -= this.effect.animPoint.power
+                this.angle = Math.atan2(this.animPointDistanceVector.y, this.animPointDistanceVector.x)
+
+                this.velocity.x += this.force * Math.cos(this.angle)
+                this.velocity.y += this.force * Math.sin(this.angle)
+            }
+
+            if (proximityCheck) {
+                this.angle = Math.atan2(this.distanceVector.y, this.distanceVector.x)
+
+                this.velocity.x += this.force * Math.cos(this.angle)
+                this.velocity.y += this.force * Math.sin(this.angle)
+
+            }
+
+            
+
+            colorValues[0] += (baseColorValues[0] - colorValues[0]) * (this.ease / 1.5)
+            colorValues[1] += (baseColorValues[1] - colorValues[1]) * (this.ease / 1.5)
+            colorValues[2] += (baseColorValues[2] - colorValues[2]) * (this.ease / 1.5)
+
+            this.color = `rgb(${colorValues[0]},${colorValues[1]},${colorValues[2]})`
+
+            this.vector.x += (this.velocity.x *= this.friction) + (this.tempOrigin.x - this.vector.x) * this.ease
+            this.vector.y += (this.velocity.y *= this.friction) + (this.tempOrigin.y - this.vector.y) * this.ease
         }
-        this.color = color
-        this.baseColor = color
-        this.size = this.effect.size
-
-        // position relative to mouse
-        this.distanceVector = {
-            x: 0,
-            y: 0
-        }
-
-        this.velocity = {
-            x: 0,
-            y: 0
-        }
-
-        this.force = 0
-        this.angle = 0
-        this.distance = 0
-
-        this.friction = Math.random() * 0.6 + 0.15
-        this.ease = Math.random() * .1 + 0.05
-        
-    }
-    draw() {
-        this.effect.context.fillStyle = this.color
-        this.effect.context.fillRect(this.vector.x, this.vector.y, this.size, this.size)
-    }
-    update() {
-
-        this.distanceVector = {
-            x: this.effect.mouse.x - this.vector.x,
-            y: this.effect.mouse.y - this.vector.y
-        }
-        this.distance = this.distanceVector.x * this.distanceVector.x + this.distanceVector.y * this.distanceVector.y
-
-        const proximityCheck = this.distance < (Math.random() * .8 + .5) * this.effect.mouse.radius
-
-        if (this.vector.x == this.origin.x && this.vector.y == this.origin.y && !proximityCheck && this.velocity.x == 0 && this.velocity.y == 0) {
-            this.color = this.baseColor
-            return
-        }
-        
-
-        const colorValues = this.color.substring(4, this.color.indexOf(')')).split(',').map(color => { return parseInt(color) })
-        const baseColorValues = this.baseColor.substring(4, this.baseColor.indexOf(')')).split(',').map(color => { return parseInt(color) })
-
-        if (proximityCheck) {
-            this.force = -this.effect.mouse.radius / this.distance 
-            this.effect.doPulse = false
-            this.angle = Math.atan2(this.distanceVector.y, this.distanceVector.x)
-            this.velocity.x += this.force * Math.cos(this.angle)
-            this.velocity.y += this.force * Math.sin(this.angle)
-
-            colorValues[0] = colorValues[1] < 255 ? colorValues[0] += 75 * this.ease : 0
-            colorValues[1] = colorValues[1] > 0 ? colorValues[1] -= 75 * this.ease : 0
-            colorValues[2] = colorValues[2] > 0 ? colorValues[2] -= 75 * this.ease : 255
-
-        }
-
-        colorValues[0] += (baseColorValues[0] - colorValues[0]) * (this.ease / 1.5)
-        colorValues[1] += (baseColorValues[1] - colorValues[1]) * (this.ease / 1.5)
-        colorValues[2] += (baseColorValues[2] - colorValues[2]) * (this.ease / 1.5)
-
-        this.color = `rgb(${colorValues[0]},${colorValues[1]},${colorValues[2]})`
-
-        this.vector.x += (this.velocity.x *= this.friction) + (this.tempOrigin.x - this.vector.x) * this.ease
-        this.vector.y += (this.velocity.y *= this.friction) + (this.tempOrigin.y - this.vector.y) * this.ease
-    }
     }
    
     class Effect {
@@ -113,22 +137,26 @@ function loadParticles(direction) {
             this.canvasHeight = canvasHeight
 
             this.pageTitle = pageTitle
-            this.doPulse = true
-            this.fontSize = parseInt(this.pageTitle.getAttribute('data-fontSize')) * this.canvasWidth / 100            
+            this.providedFontSize = parseInt(this.pageTitle.getAttribute('data-fontSize'))   
+            this.fontSize = (this.canvasWidth / 100) * this.providedFontSize
 
+            this.text = this.pageTitle.textContent
             this.lineHeight = this.fontSize * 1
             this.maxTextWidth = this.canvasWidth * .8
+            this.textHeight = 0
+            this.textWidth = this.maxTextWidth
             
             this.placementY = (parseInt(this.pageTitle.getAttribute('data-y')) / 100) * this.canvasHeight
 
-            if (this.placementY - (this.lineHeight / 2) < 40) this.placementY = 40 + (this.lineHeight / 2)
+            if ( this.placementY - (this.textHeight / 2) < 65 ) { this.placementY = 65 + (this.textHeight / 2) }
 
             this.vector = {
                 x: (parseInt(this.pageTitle.getAttribute('data-x')) / 100) * this.canvasWidth,
                 y: this.placementY
             }
+            this.box = {}
 
-            this.text = this.pageTitle.textContent
+            
 
             this.providedGap = this.pageTitle.getAttribute('data-gap')
             this.providedSize = this.pageTitle.getAttribute('data-size')
@@ -139,18 +167,33 @@ function loadParticles(direction) {
             this.maxed = false
             this.gap = 2
             this.size = 2
+            this.scalingComplexity = true
             
             this.mouse = {
-                radius: 5000,
+                radius: 1500,
+                x: 0,
+                y: 0
+            }
+
+            this.animationFunctionCounter = 0
+            this.aimationDirection = 1
+            this.runAnimation = false
+            this.animPoint = {
+                power: 1,
                 x: 0,
                 y: 0
             }
 
             if (this.canvasWidth < 768) {
-                this.fontSize *= 2
-                this.gap = 2
-                this.size = 1
+                this.fontSize = (this.canvasWidth / 100 ) * (this.providedFontSize * 1.75)
                 this.mouse.radius = 1500
+            } else {
+                this.fontSize = (this.canvasWidth / 100 ) * this.providedFontSize 
+                this.mouse.radius = this.canvasWidth * 5
+            }
+
+            if (this.vector.y + (this.lineHeight / 2) > (this.canvasHeight / 100) * 45) {
+                this.fontSize *= .75
             }
 
 
@@ -176,6 +219,7 @@ function loadParticles(direction) {
             
         }
         setAnimationComplexity(changeBy) {
+            this.scalingComplexity = true
             if (changeBy > 0 && !this.maxed) {
                 this.gap > 1 ? this.gap-- : this.maxed = true
                 if (this.gap == 2) {
@@ -184,6 +228,7 @@ function loadParticles(direction) {
                     this.size--
                 }
                 this.basic = false
+                
             } else if (!this.basic) {
                 this.gap < 3 ? this.gap++ : this.basic = true
                 this.size < 3 && this.size++
@@ -191,7 +236,10 @@ function loadParticles(direction) {
             }
             if (!this.basic && !this.maxed) {
                 this.stopped = true
+
                 this.reset()
+                
+                this.pulse()
             }
         }
         pulse() {
@@ -201,21 +249,27 @@ function loadParticles(direction) {
 
                 particle.color = `rgb(220,50,50)`
 
-                particle.velocity.x += -(x - particle.vector.x) / 30 + (Math.random() * .1 + .05)
-                particle.velocity.y += -(y - particle.vector.y) / 30 + (Math.random() * .1 + .05)
+                particle.velocity.x += -(x - particle.vector.x) / 40 + (Math.random() * .1 + .05)
+                particle.velocity.y += -(y - particle.vector.y) / 40 + (Math.random() * .1 + .05)
             })
-        }
 
-        wrapText() {
-            console.log('running')
+            if (this.animationFunctionCounter < 5) {
+                this.animationFunctionCounter++
+                return false
+            } else {
+                this.animationFunctionCounter = 0
+                return true
+            }
+        }
+        async wrapText() {
             // this.stopped = false
             this.pageTitle.classList.add('d-none')
-            // Canvas Settings
             
-            this.context.fillStyle = '#ce7f10'
-            this.context.font = `${this.fontSize}px Helvetica`
-            this.context.textAlign = 'center'
-            this.context.textBaseline = 'middle'
+            var f = new FontFace('myFont', `url(${fontRoute})`);
+
+            await f.load()
+
+            document.fonts.add(f);
 
             // Multiline break
             this.textArray = []
@@ -233,42 +287,61 @@ function loadParticles(direction) {
                 }
                 this.textArray[lineCounter] = line
             }
-            let textHeight = this.lineHeight * lineCounter
-            this.vector.y = this.placementY - textHeight/2
-            
-            this.drawText()
+            this.textHeight = this.lineHeight * lineCounter
+            this.vector.y = this.placementY - this.textHeight/2
 
+            this.context.font = `${this.fontSize}px myFont`
+
+            if ( this.placementY - (this.textHeight / 2) < 65 ) { 
+                this.vector.y = 65 + (this.textHeight / 2) 
+                this.placementY = this.vector.y
+            }
+
+            this.drawText()
+            
             this.convertToParticles()
+
+            this.scalingComplexity = false
+
+            setTimeout(() => {
+                this.runAnimation = true
+                
+            }, 2000)
+            
+            
         }
         drawText() {
+            this.context.clearRect(0,0,this.canvasWidth, this.canvasHeight)
+            this.context.fillStyle = '#ce7f10'
+            this.context.textAlign = 'center'
+            this.context.textBaseline = 'middle'
             this.textArray.forEach((el, index) => {
                 this.context.fillText(el, this.vector.x, this.vector.y + (index * this.lineHeight))
             })
         }
         convertToParticles() {
             this.particles = []
+            const newParticles = []
+
             const pixels = this.context.getImageData(0,0,this.canvasWidth,this.canvasHeight).data
+            
             this.context.clearRect(0,0,this.canvasWidth, this.canvasHeight)
+            
             for (let y = 0; y < this.canvasHeight; y += this.gap) {
                 for (let x = 0; x < this.canvasWidth; x += this.gap) {
                     const index = (y * this.canvasWidth + x) * 4
                     const alpha = pixels[index + 3]
 
-                    
-
                     if (alpha > 0) {
-                        const red = pixels[index]
-                        const green = pixels[index + 1]
-                        const blue = pixels[index + 2]
-
-                        const color = `rgb(${red},${green},${blue})`
-
-                        this.particles.push(new Particle({ effect: this, vector: { x, y }, color }))    
+                        newParticles.push(new Particle({ effect: this, vector: { x, y } }))    
                     }
                 }   
             }
+
+            this.particles = newParticles
         }
         render() {
+            
             if (this.basic) {
                 this.drawText()
             } else {
@@ -277,7 +350,9 @@ function loadParticles(direction) {
                     particle.draw(particle.color)
                 })
             }
-            
+
+            this.runAnimation && this.swipe()
+
         }
         move(amount) { 
             this.particles.forEach(particle => {
@@ -291,7 +366,40 @@ function loadParticles(direction) {
                 
             })
         }
+        swipe() {
+            // Delay between animation loops
+            if (this.animationFunctionCounter > 0) {
+                this.animationFunctionCounter--
+                return
+            }
 
+            // Set y position and distortion strength
+            this.animPoint.y = this.vector.y
+            this.animPoint.power = .15
+
+            // if moving right
+            if (this.aimationDirection == 1) {
+                // If within canvas
+                if (this.animPoint.x < this.canvasWidth) {
+                    // Move to the right by .25% of sceen width
+                    this.animPoint.x += this.canvasWidth / 175
+                } else {
+                    // reverse direction
+                    this.aimationDirection = 0
+                    
+                }
+            } else if (this.animPoint.x > 0) {
+                // Move to the left by .25% of sceen width
+                this.animPoint.x -= this.canvasWidth / 175
+            } else {
+                // reverse direction, initiate delay
+                this.aimationDirection = 1
+                this.animPoint.x = -50
+                this.animationFunctionCounter = 500
+            }
+
+            return false
+        }
         reset() {
             
             resetCanvas()
@@ -302,9 +410,20 @@ function loadParticles(direction) {
             this.placementY = (parseInt(this.pageTitle.getAttribute('data-y')) / 100) * this.canvasHeight
             if (this.placementY < 40) this.placementY = 40
 
+            if (this.canvasWidth < 768) {
+                this.fontSize = (this.canvasWidth / 100 ) * (this.providedFontSize * 1.75)
+                this.mouse.radius = 1500
+            } else {
+                this.fontSize = (this.canvasWidth / 100 ) * this.providedFontSize
+                this.mouse.radius = this.canvasWidth * 5
+            }
+            if (this.vector.y + (this.lineHeight / 2) > (this.canvasHeight / 100) * 45) {
+                this.fontSize *= .75
+            }
+
             this.vector.x = (parseInt(this.pageTitle.getAttribute('data-x')) / 100) * this.canvasWidth,
             this.vector.y = this.placementY
-            this.context.clearRect(0,0,this.canvasWidth, this.canvasHeight)
+            
 
             this.wrapText()
 
@@ -319,22 +438,31 @@ function loadParticles(direction) {
 
     let slowFrameCount = 0
     let fastFrameCount = 0
+
     function animate() {
         if (!effect) return
 
+        if(!stopped || !this.basic) {
+            requestAnimationFrame(animate)
+        }
+
         lastFrame = +new Date()
+        
         ctx.clearRect(0,0,canvas.width, canvas.height)
+        
         effect.render()
 
+        if (effect.scalingComplexity) return
+
         const animationTime = +new Date() - lastFrame
-        if (animationTime > 50 && !effect.basic) {
+        if (animationTime > 55 && !effect.basic) {
             if (slowFrameCount > 8) {
                 effect.setAnimationComplexity(-1)
             }
             fastFrameCount = 0
             slowFrameCount++
         } else {
-            if (animationTime < 8 && !effect.maxed && speedCheckCount < 100) {
+            if (animationTime < 6 && !effect.maxed && speedCheckCount < 100) {
                 if (fastFrameCount > 10) {
                     effect.setAnimationComplexity(+1)
                 }
@@ -343,23 +471,9 @@ function loadParticles(direction) {
             slowFrameCount = 0
         }
         speedCheckCount < 100 && speedCheckCount++
-        
-        
-        
-
-        if(!stopped || !this.basic) {
-            requestAnimationFrame(animate)
-        }
-        window.setTimeout(() => {
-            
-            
-        }, 1000 / frameRate)
     }
-    animate()
 
-    window.setTimeout(() => {
-        effect.doPulse && effect.pulse()
-    }, 3000)
+    animate()
 
     function resetCanvas() {
         canvas.height = window.innerHeight

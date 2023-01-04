@@ -1,0 +1,18 @@
+div(class='work-item-details' id=item._id)
+    a(class='background' href="#")
+    div(class='panel')
+        header
+            h3= item.title
+        div(class='row w-100 mx-auto')
+            div(class='col-12 col-md-6')
+                figure
+                    img(src=item.image, alt='NRJohnson - ' + item.title)
+                div(class='details-links row w-100 mx-auto mb-4 px-2')
+                    div(class='col-6')
+                        a(href=item.repo class='mobile-button light w-100' target="_blank") GitHub Repo
+                    div(class='col-6')
+                        a(href=item.url class='mobile-button light w-100' target="_blank") Live Site
+            
+            div(class='col-12 col-md-6')
+                div
+                    | !{item.details}
