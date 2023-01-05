@@ -13,6 +13,11 @@ addToHistory(new URL(window.location).pathname)
 
 async function navigate(event, route) {
     if (!canNavigate) return
+
+    const loader = document.getElementById('loader')
+    let loadTimeout = setTimeout(() => {
+        loader.classList.add('loading')
+    }, 1000)
     
     canNavigate = false
     const url = new URL(window.location)
@@ -38,28 +43,30 @@ async function navigate(event, route) {
     
     main.style.transform = `translateX(${100 * (pageSlideDirection * -1)}vw)`
     main.style.opacity = 0
-    canvas.style.transform = `translateX(${100 * (pageSlideDirection * -1)}vw)`
+    canvas ? canvas.style.transform = `translateX(${100 * (pageSlideDirection * -1)}vw)` : null
 
     newCanvas.style.transform = `translateX(${100 * pageSlideDirection}vw)`
     newMain.style.transform = `translateX(${100 * pageSlideDirection}vw)`
 
     setSelectedLinks(route)
+
     window.setTimeout(async () => {
-        const body = main.parentNode
-        
-        stopped = true
-
-        body.removeChild(main)
-        body.removeChild(canvas)
-
-        effect = null
-
-        body.insertBefore(newMain, body.children[0])
-        body.insertBefore(newCanvas, body.children[body.children.length - 1])
-
-        console.log('navigating to: https://' + url.hostname + route)
-
         await getHTML('https://' + url.hostname + route).then(html => {
+            const body = main.parentNode
+        
+            stopped = true
+
+            body.removeChild(main)
+            canvas && body.removeChild(canvas)
+
+            effect = null
+
+            body.insertBefore(newMain, body.children[0])
+            body.insertBefore(newCanvas, body.children[body.children.length - 1])
+
+            console.log('navigating to: https://' + url.hostname + route)
+
+
             const title = route.split('/').map(word => { return word.substring(0,1).toUpperCase() + word.substring(1) }).join(' ')
             document.title = title == ' ' ? 'Home' : title
             newMain.innerHTML = html.html
@@ -72,6 +79,9 @@ async function navigate(event, route) {
             setScrollBarSize()
             enableEmailLink()
 
+            clearTimeout(loadTimeout)
+            loader.classList.remove('loader')
+
             const selectors = document.querySelectorAll('.pageSelector')
             selectors.forEach(selector => {
                 selector.style.transform = 'translateX(0)'
@@ -80,10 +90,17 @@ async function navigate(event, route) {
             canNavigate = true
             newMain.style.opacity = 1
             newMain.style.transform = 'translateX(0)'
-            revealItems(pageSlideDirection < 0 ? true : false)
+            setPageRevealAnimations()
             loadParticles()
         }).catch(err => {
-            main.innerHTML = err
+            clearTimeout(loadTimeout)
+            console.log(err)
+            main.style.transform = `translateX(0)`
+            main.style.opacity = 1
+            main.innerHTML = `<div id="pageError">
+                <h2>Error ${err.status}</h2>
+                <p>${err.message}</p>
+            </div>`
         })
     }, 250)
 
@@ -125,9 +142,9 @@ function getPageSlideDirection(route) {
 
 function getHTML(route) {
     return new Promise(async (resolve, reject) => {
-        await serverRequest(route + '?data=true', 'GET').then(html => {
-            
-            resolve(JSON.parse(html))
+        await serverRequest(route + '?data=true', 'GET').then(data => {
+            const res = JSON.parse(data)
+            resolve(res)  
         }).catch(err => {
             reject(err)
         })
@@ -155,10 +172,10 @@ function serverRequest(url, method, data) {
                 // If response from server is good, return the response
                 resolve(this.response)
             } else if(this.readyState == 4) {
+                console.log(this)
                 // If response is bad, return error status html to loaded into page.
                 
-                let message = '<p>Could not get data from server</p>'
-                if(this.status == 404) message = '<p>' + this.statusText + '</p>'
+                let message = `<p>Could not get data from server!</p><p>Status: ${this.status} - ${this.statusText}</p>`
                 const error = new Error(message)
 
                 reject(error)
@@ -264,6 +281,9 @@ window.addEventListener('wheel', ({ wheelDeltaY }) => {
     if (!canNavigate) return
 
     const currentPage = document.querySelector('.pageSelected')
+
+    if (!currentPage) return
+
     const navDom = currentPage.parentNode
     const navIndex = Array.from(navDom.children).indexOf(currentPage)
 
@@ -362,27 +382,65 @@ function toggleMobileMenu(close) {
     close ? main.classList.remove('mobile-toggled') : main.classList.toggle('mobile-toggled')
 }
 
-// reveals page items with animation
-function revealItems(left) {
-    const animationElements = document.querySelectorAll('.animation')
+// Hides items on initial page load that are not visible to slide in when scrolled to.
+function setPageRevealAnimations() {
+    const animationElements = document.querySelectorAll('.animation-child')
     animationElements.forEach(el => {
         el.classList.add('hide')
+    })
+    revealItems()
+}
+setPageRevealAnimations()
 
-        const elementRect = el.getBoundingClientRect()
+// reveals page items when scrolled to with animation
+function revealItems() {
+    const animationParents = document.querySelectorAll('.animation')
+    animationParents.forEach(parent => {
+        const animationChildren = parent.querySelectorAll('.animation-child')
         
-        left && el.classList.add('left')
+        let leftIndex = 0
+        let rightIndex = 0
+        let prevBottom = null
 
-        setTimeout(() => {
-            if (elementRect.y < window.pageYOffset + window.innerHeight) {
-                el.classList.remove('hide')
+        animationChildren.forEach(el => {
+            const elementRect = el.getBoundingClientRect()
+        
+            if (prevBottom) {
+                if (elementRect.top > prevBottom) {
+                    leftIndex = 0
+                    rightIndex = 0
+                    prevBottom = elementRect.bottom
+                }
             } else {
-                el.classList.add('hide')
+                prevBottom = elementRect.bottom
             }
-        }, 50)
+
+            if (elementRect.left < window.innerWidth / 2) {
+                el.classList.add('left')
+                el.style.transitionDelay = `${.2 * leftIndex}s`
+                el.style.zIndex = -leftIndex
+                rightIndex = 0
+                leftIndex++
+            } else {
+                el.classList.remove('left')
+                el.style.transitionDelay = `${.2 * rightIndex}s`
+                el.style.zIndex = -rightIndex
+                leftIndex = 0
+                rightIndex++
+            }
+
+            setTimeout(() => {
+                if (elementRect.bottom - (elementRect.height / 4) < window.innerHeight) {
+                    el.classList.remove('hide')
+                } else if (elementRect.top > window.innerHeight) {
+                    el.style.transitionDelay = 0
+                    el.classList.add('hide')
+                }
+            }, 50)
+        })
         
     })
 }
-revealItems()
 
 function setScrollBarSize() {
     const body = document.body
@@ -432,7 +490,7 @@ setScrollHint()
 window.addEventListener('resize', () => {
     setScrollBarSize()
     setScrollBarPosition()
-    effect.reset()
+    effect && effect.reset()
 })
 
 window.addEventListener('scroll', () => {

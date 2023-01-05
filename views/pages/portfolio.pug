@@ -3,11 +3,36 @@ section(class='container')
     div(class='row')
         div(class='col')
             header(class='mb-4')
-                a(href="#" class='plain mobile-button light') View My Full Resume 
+                a(href="/resume?data=true" class='plain mobile-button light portfolio-resume-button page-redir') View My Full Resume 
+                hr
 
-            section(class='row work-items animation shift')
+            section(class='row work-items')
                 for item in data 
-                    div(class='col-12 col-md-4 mb-4')
+                    div(class='col-12 col-md-4 mb-4 animation shift')
+                        div(class='panel')
+                            header
+                                h3= item.title
+                            figure
+                                img(src=item.image, alt='NRJohnson - ' + item.title)
+                            p= item.statement
+                            div(class='col-12 p-2 pb-md-4')
+                                a(class='panel-link plain mobile-button light w-100' href="#" + item._id data-id=item._id) View Details
+            
+            div(style='height: 1000px;')
+
+            section(class='row work-items animation')
+                for item in data 
+                    div(class='col-12 col-md-4 mb-4 animation-child shift')
+                        div(class='panel')
+                            header
+                                h3= item.title
+                            figure
+                                img(src=item.image, alt='NRJohnson - ' + item.title)
+                            p= item.statement
+                            div(class='col-12 p-2 pb-md-4')
+                                a(class='panel-link plain mobile-button light w-100' href="#" + item._id data-id=item._id) View Details
+                for item in data 
+                    div(class='col-12 col-md-4 mb-4 animation-child shift')
                         div(class='panel')
                             header
                                 h3= item.title
@@ -19,5 +44,3 @@ section(class='container')
 
 for item in data
     include ../includes/panel.pug
-                    
-        

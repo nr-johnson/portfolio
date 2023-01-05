@@ -1,15 +1,16 @@
 nav#desktopNav(class='d-none d-md-block container-fluid py-2')
     div(class='row w-100 mx-auto position-relative justify-content-end')
-        for link in pages 
-            -let deskLinkTitle = 'Home'
-            if link != ''
-                -deskLinkTitle = link.substring(0,1).toUpperCase() + link.substring(1)
-            if link == page
-                a(class='nav-item page-redir pageSelected' href='/' + link)
-                    span= deskLinkTitle
-            else 
-                a(class='nav-item page-redir' href='/' + link)
-                    span= deskLinkTitle
+        if pages
+            for link in pages 
+                -let deskLinkTitle = 'Home'
+                if link != ''
+                    -deskLinkTitle = link.substring(0,1).toUpperCase() + link.substring(1)
+                if link == page
+                    a(class='nav-item page-redir pageSelected' href='/' + link)
+                        span= deskLinkTitle
+                else 
+                    a(class='nav-item page-redir' href='/' + link)
+                        span= deskLinkTitle
         div#desktopSelector(class='pageSelector selector')
 
 nav#mobileNav(class='d-md-none container-fluid')
@@ -22,16 +23,17 @@ nav#mobileNav(class='d-md-none container-fluid')
             div(class="bar2")
     a#mobileNavBack(class='mobile-nav-back' href='#')
     nav#mobileNavMenu
-        for link in pages 
-            -let mobilekLinkTitle = 'Home'
-            if link != ''
-                -mobilekLinkTitle = link.substring(0,1).toUpperCase() + link.substring(1)
-            if link == page
-                a(class='nav-item page-redir plain light pageSelected' href='/' + link)
-                    span= mobilekLinkTitle
-            else 
-                a(class='nav-item page-redir plain light' href='/' + link)
-                    span= mobilekLinkTitle
+        if pages
+            for link in pages 
+                -let mobilekLinkTitle = 'Home'
+                if link != ''
+                    -mobilekLinkTitle = link.substring(0,1).toUpperCase() + link.substring(1)
+                if link == page
+                    a(class='nav-item page-redir plain light pageSelected' href='/' + link)
+                        span= mobilekLinkTitle
+                else 
+                    a(class='nav-item page-redir plain light' href='/' + link)
+                        span= mobilekLinkTitle
         div#mobileSelector(class='selector')
 
 section#social 

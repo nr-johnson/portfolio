@@ -17,10 +17,14 @@ function siteOps() {
             const pages = `${req.root}/views/pages` // All views
             return new Promise(async (resolve, reject) => {
 
+                
+
                 // 404 handeling.
                 // If the file corrisponding with the route doesn't exist it creates a 404 error and returns error page html.
                 if(!fs.existsSync(`${pages}${route}.pug`)) {
+                    
                     const error = new Error404(route)
+
                     if(req.env !== 'development') error.stack = null // Prevents stack traces from being leaked to user.
 
                     reject(pug.renderFile(`${pages}/error.pug`, {

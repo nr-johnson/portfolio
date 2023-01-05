@@ -4,8 +4,16 @@ let stopped = false
 let fontRoute = '/fonts/Megrim-Regular.ttf'
 
 function loadParticles(direction) {
-    stopped = false
+    
     const canvas = document.getElementById('canvas')
+    if (!document.getElementById('pageTitle')) {
+        canvas.parentNode.removeChild(canvas)
+        return
+    }
+
+    stopped = false
+    
+
     let ctx = canvas.getContext('2d')
 
     !direction ? direction = 0 : null

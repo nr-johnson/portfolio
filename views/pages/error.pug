@@ -1,6 +1,6 @@
-h2 Uh oh...
-h3 Status: 
-    = error.status
-p= error.message
-if error.stack
-    p= error.stack
+div#pageError
+    h2 Error: 
+        = error.status
+    p= error.message
+    if error.stack
+        p= error.stack

@@ -206,6 +206,9 @@ a.plain.light {
 .mobile-button.light {
     background-color: var(--primary);
 }
+.portfolio-resume-button {
+    width: 100%;
+}
 
 .panel {
     position: relative;
@@ -269,7 +272,7 @@ a.plain.light {
     transition: .25s;
 }
 .work-item-details .panel {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     width: 85vw;
@@ -542,14 +545,86 @@ a:hover {
     height: fit-content;
     transform: translateX(0);
     opacity: 1;
+    transition: .75s;
 }
 .shift.hide.left {
     transform: translateX(-200%);
+    transition: 0;
 }
 .shift.hide {
     transform: translateX(200%);
+    opacity: 0;
+    transition: 0;
+}
+
+#loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: calc(var(--vh, 1vh) * 20);
+    width: calc(var(--vh, 1vh) * 20);
+    opacity: 0;
+    pointer-events: none;
+}
+#loader.loading {
     opacity: 1;
-    transition: .75s;
+    transition: .25;
+}
+#loader::after {
+    content: 'Loading';
+    display: block;
+    text-align: center;
+    padding-top: 1rem;
+    
+}
+#loader.loading::after {
+    animation-name: loaderText;
+    animation-duration: 3s;
+    animation-iteration-count: infinite;
+}
+@keyframes loaderText {
+    0% {content: 'Loading'}
+    25% {content: 'Loading .'}
+    50% {content: 'Loading . .'}
+    75% {content: 'Loading . . .'}
+    100% {content: 'Loading'}
+}
+#loader #circle {
+    position: relative;
+    height: calc(var(--vh, 1vh) * 20);
+    width: calc(var(--vh, 1vh) * 20); 
+}
+#loader.loading #circle {
+    animation-name: loaderCircle;
+    animation-iteration-count: infinite;
+    animation-duration: 1s;
+}
+@keyframes loaderCircle {
+    from {transform: rotate(0);}
+    to {transform: rotate(360deg);}
+}
+#loader #circle::before {
+    content: "";
+    display: block;
+    height: calc(var(--vh, 1vh) * 10);
+    width: calc(var(--vh, 1vh) * 20);
+    border-radius: calc(var(--vh, 1vh) * 10) calc(var(--vh, 1vh) * 10) 0 0;
+    border: 4px solid var(--primary);
+    border-bottom: 0;
+}
+
+#pageError {
+    position: absolute;
+    color: var(--accent);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8vw;
+}
+#pageError p {
+    margin: 0 0 8px 0;
+    font-size: 4vw;
 }
 
 
@@ -558,12 +633,21 @@ a:hover {
 }
 @media (min-width: 768px) {
     #main {
-        padding-top: 12rem;
+        padding-top: 20vh;
+    }
+    #pageError {
+        font-size: 5vw;
+    }
+    #pageError p {
+        font-size: 2vw;
     }
     .mobile-button {
         padding: initial;
         background-color: transparent !important;
         color: inherit !important;
+    }
+    .portfolio-resume-button {
+        width: auto;
     }
     #scrollHint {
 

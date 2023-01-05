@@ -46,10 +46,19 @@ app.get('*', async (req, res) => {
             })
         }
     }).catch(err => {
-        res.status(err.status || 500).render('main', {
-            title: `Error ${err.status || 500}`,
-            html: err
-        })
+        if(parsedUrl.query.data) { 
+            res.json({
+                html: err
+            })
+        } else {
+            res.status(err.status || 500).render('main', {
+                title: `Error ${err.status || 500}`,
+                page: 'error',
+                pages: ['','portfolio','about','contact'],
+                html: err
+            })
+        }
+        
     })
 })
 
