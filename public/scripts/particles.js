@@ -1,11 +1,25 @@
+// Main particle effect variable
 let effect
-let frameRate = 45
+// if true, animation will not render next frame
 let stopped = false
+// Animation loop ID
+let animationRequestID = null
+// path to font file
 let fontRoute = '/fonts/Megrim-Regular.ttf'
+// setting for the number of particles to be created. This will change based on performance.
+// it allows consistency between page loads, so that there isn't a flash when the resolution changes each time
+// 1 is max complexity (1px in size), 3 is the max.
+let complexity = 1
 
+let manualStopped = false
+
+// Main function to generate particles
 function loadParticles(direction) {
-    
-    const canvas = document.getElementById('canvas')
+    // Canvas to draw particles
+    let canvas = document.getElementById('canvas')
+    // Text is collected from an H1 element in the page with the id of pageTitle
+    // If that element does not exist the function is stopped.
+    const pageTitle = document.getElementById('pageTitle')
     if (!document.getElementById('pageTitle')) {
         canvas.parentNode.removeChild(canvas)
         return
@@ -13,23 +27,18 @@ function loadParticles(direction) {
 
     stopped = false
     
-
+    // Canvas context
     let ctx = canvas.getContext('2d')
 
-    !direction ? direction = 0 : null
-
+    // Canvas size
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    const pageTitle = document.getElementById('pageTitle')
-    if (!pageTitle) {
-        canvas.style.opacity = 0
-        return        
-    }
-
+    // Ensures canvas is visible
     canvas.style.opacity = 1
     canvas.style.transform = `translateX(0)`
 
+    // Class object for particles
     class Particle {
         constructor({ effect, vector }) {
             this.effect = effect
@@ -138,145 +147,145 @@ function loadParticles(direction) {
         }
     }
    
+    // Class object for main effect
     class Effect {
-        constructor({ context, canvasWidth, canvasHeight, pageTitle, direction }) {
+        constructor({ context, canvasWidth, canvasHeight, pageTitle }) {
+            // Context and canvas vars
             this.context = context
             this.canvasWidth = canvasWidth
             this.canvasHeight = canvasHeight
 
+            // pageTitle dom element from which Text content is collected
             this.pageTitle = pageTitle
-            this.providedFontSize = parseInt(this.pageTitle.getAttribute('data-fontSize'))   
-            this.fontSize = (this.canvasWidth / 100) * this.providedFontSize
 
+            // Text variables
             this.text = this.pageTitle.textContent
-            this.lineHeight = this.fontSize * 1
-            this.maxTextWidth = this.canvasWidth * .8
+            this.providedFontSize = parseInt(this.pageTitle.getAttribute('data-fontSize'))
+            this.baseFontSize = (this.canvasWidth / 100) * this.providedFontSize
+            this.fontSize = this.baseFontSize
+            this.providedYVector = parseInt(this.pageTitle.getAttribute('data-y'))
+            this.lineHeight = this.fontSize
+            this.maxTextWidth = 80
             this.textHeight = 0
             this.textWidth = this.maxTextWidth
             
-            this.placementY = (parseInt(this.pageTitle.getAttribute('data-y')) / 100) * this.canvasHeight
-
-            if ( this.placementY - (this.textHeight / 2) < 65 ) { this.placementY = 65 + (this.textHeight / 2) }
-
-            this.vector = {
-                x: (parseInt(this.pageTitle.getAttribute('data-x')) / 100) * this.canvasWidth,
-                y: this.placementY
-            }
-            this.box = {}
-
-            
-
-            this.providedGap = this.pageTitle.getAttribute('data-gap')
-            this.providedSize = this.pageTitle.getAttribute('data-size')
+            // Main effect vector variables
+            // Verticle placement. Based on attribute stored in dom element
+            this.placementY = (this.providedYVector / 100) * this.canvasHeight
 
             // Text Particles
             this.particles = []
+            // If basic is true, Dom element will be show and this function will stop
             this.basic = false
+            // if true, particle complexity will not increase. Will be set when particle size is 1 pixel
             this.maxed = false
-            this.gap = 2
-            this.size = 2
+            // number of pixels between particles origin
+            this.gap = complexity
+            // size of particles in pixels
+            this.size = this.gap
+            // if true, the complexity is currently being adjusted
             this.scalingComplexity = true
             
+            // Mouse/touch effect radius and position
             this.mouse = {
                 radius: 1500,
                 x: 0,
                 y: 0
             }
 
+            // Variables for swipe effect
             this.animationFunctionCounter = 0
             this.aimationDirection = 1
             this.runAnimation = false
+            // animation point effect radius and position
+            // Works the same as mouse and touch
             this.animPoint = {
                 power: 1,
                 x: 0,
                 y: 0
             }
 
+            // Changes some variables based on screen width
             if (this.canvasWidth < 768) {
-                this.fontSize = (this.canvasWidth / 100 ) * (this.providedFontSize * 1.75)
+                this.fontSize = this.baseFontSize * 1.5
+                this.maxTextWidth = 60
+                this.lineHeight = this.fontSize
                 this.mouse.radius = 1500
+                this.placementY = ((this.providedYVector / 100) * .9) * this.canvasHeight
+                
             } else {
-                this.fontSize = (this.canvasWidth / 100 ) * this.providedFontSize 
+                this.fontSize = this.baseFontSize
+                this.lineHeight = this.fontSize
+                this.maxTextWidth = 80
                 this.mouse.radius = this.canvasWidth * 5
+                this.placementY = (this.providedYVector / 100) * this.canvasHeight
             }
 
-            if (this.vector.y + (this.lineHeight / 2) > (this.canvasHeight / 100) * 45) {
-                this.fontSize *= .75
+            // Main position variables
+            this.vector = {
+                x: (parseInt(this.pageTitle.getAttribute('data-x')) / 100) * this.canvasWidth,
+                y: this.placementY
             }
 
-
+            // Sets interactive effect position on mouse movement
             window.addEventListener('mousemove', e => {
                 this.mouse.x = e.x
                 this.mouse.y = e.y + window.pageYOffset
             })
+            // Sets interactive effect position on touch moevement
             window.addEventListener('touchmove', e => {
                 this.mouse.x = e.touches[0].clientX
                 this.mouse.y = e.touches[0].clientY + window.pageYOffset
             })
+            // Set interactive effect position to zero when finger leaves touchscreen
             window.addEventListener('touchend', e => {
                 this.mouse.x = 0
                 this.mouse.y = 0
             })
-            window.addEventListener('wheel', e => {
-                this.mouse.x = e.clientX
-                this.mouse.y = e.clientY
-            })
 
-            this.direction = direction
+            // Array containing each row of text after is has been split
             this.textArray = []
             
         }
+        // Alters particle complexity (count and size)
         setAnimationComplexity(changeBy) {
             this.scalingComplexity = true
+            // If increasing complexity and complexity is not maxed
             if (changeBy > 0 && !this.maxed) {
+                // Decreases space between particles so long as that space is greater than 1 pixel
                 this.gap > 1 ? this.gap-- : this.maxed = true
-                if (this.gap == 2) {
-                    this.size = 1
-                } else if (this.size > 1) {
-                    this.size--
-                }
-                this.basic = false
+
+                // Decreases particle size so long as they are larger than 1 pixel
+                this.size > 1 && this.size--
                 
+                // Ensures next frame will render particles
+                this.basic = false
+
             } else if (!this.basic) {
+                // If decreasing complexity and particle render is not turned off
+                // Increase gap between particles so long as gap is less than 3 pixels
                 this.gap < 3 ? this.gap++ : this.basic = true
+                // Increase particle size so long as particle is less than 3 pixels
                 this.size < 3 && this.size++
+                // Ensures that complexity is not maxed
                 this.maxed = false
             }
-            if (!this.basic && !this.maxed) {
-                this.stopped = true
-
-                this.reset()
-                
-                this.pulse()
-            }
+            // If extremes were not reached, reset animation
+            complexity = this.gap
+            this.reset()
         }
-        pulse() {
-            const y = this.vector.y
-            const x = this.vector.x
-            this.particles.forEach(particle => {
-
-                particle.color = `rgb(220,50,50)`
-
-                particle.velocity.x += -(x - particle.vector.x) / 40 + (Math.random() * .1 + .05)
-                particle.velocity.y += -(y - particle.vector.y) / 40 + (Math.random() * .1 + .05)
-            })
-
-            if (this.animationFunctionCounter < 5) {
-                this.animationFunctionCounter++
-                return false
-            } else {
-                this.animationFunctionCounter = 0
-                return true
-            }
-        }
+        // splits text into individual rows
         async wrapText() {
-            // this.stopped = false
+            // Hides dom element
             this.pageTitle.classList.add('d-none')
             
+            // Creates new font
             var f = new FontFace('myFont', `url(${fontRoute})`);
 
+            // Waits for font to load
             await f.load()
 
+            // Adds font to document
             document.fonts.add(f);
 
             // Multiline break
@@ -285,39 +294,56 @@ function loadParticles(direction) {
             let lineCounter = 0
             let line = ''
 
-            for (let i = 0; i < words.length; i++) {
-                let testLine = line + words[i] + ' '
-                if (this.context.measureText(testLine).width > this.maxTextWidth) {
-                    line = words[i] + ' '
-                    lineCounter++
-                } else {
-                    line = testLine
-                }
-                this.textArray[lineCounter] = line
-            }
-            this.textHeight = this.lineHeight * lineCounter
-            this.vector.y = this.placementY - this.textHeight/2
+            // Loops through each word
+            // for (let i = 0; i < words.length; i++) {
+            //     // if adding word to line does not exced max line width, add it to the line, else, create a new line
+            //     let testLine = line + words[i] + ' '
+            //     if (this.context.measureText(testLine).width > this.maxTextWidth) {
+            //         line = words[i] + ' '
+            //         lineCounter++
+            //     } else {
+            //         line = testLine
+            //     }
+            //     // Add line to text line array
+            //     this.textArray[lineCounter] = line
+            // }
 
+            this.textArray = [this.text]
+
+            // Changes text variables based on line splitting
+            this.textHeight = this.lineHeight * lineCounter
+            this.vector.y = this.placementY - this.textHeight / 2
+
+            // Sets font to be rendered
             this.context.font = `${this.fontSize}px myFont`
 
-            if ( this.placementY - (this.textHeight / 2) < 65 ) { 
-                this.vector.y = 65 + (this.textHeight / 2) 
-                this.placementY = this.vector.y
+            // If text will connect with header, lower text
+            if (this.canvasWidth < 768) {
+                if ( this.placementY - (this.textHeight / 2) < 55 ) { 
+                    this.vector.y = 55 + (this.textHeight / 2) 
+                    this.placementY = this.vector.y
+                }
+            } else {
+                if ( this.placementY - (this.textHeight / 2) < 80 ) { 
+                    this.vector.y = 80 + (this.textHeight / 2) 
+                    this.placementY = this.vector.y
+                }
             }
-
-            this.drawText()
             
-            this.convertToParticles()
 
+            // Draws text to canvas
+            this.drawText()
+            // Converts text into particles
+            this.convertToParticles()
+            // allows render speed check and complexity changes
             this.scalingComplexity = false
 
+            // Delay for initial swipe animation
             setTimeout(() => {
                 this.runAnimation = true
-                
             }, 2000)
-            
-            
         }
+        // Draws text on canvas
         drawText() {
             this.context.clearRect(0,0,this.canvasWidth, this.canvasHeight)
             this.context.fillStyle = '#ce7f10'
@@ -327,6 +353,7 @@ function loadParticles(direction) {
                 this.context.fillText(el, this.vector.x, this.vector.y + (index * this.lineHeight))
             })
         }
+        // Converts text into particles
         convertToParticles() {
             this.particles = []
             const newParticles = []
@@ -348,10 +375,11 @@ function loadParticles(direction) {
 
             this.particles = newParticles
         }
+        // Renders particles (called each frame)
         render() {
-            
             if (this.basic) {
-                this.drawText()
+                this.stopped = true
+                this.pageTitle.classList.remove('d-none')
             } else {
                 this.particles.forEach(particle => {
                     particle.update()
@@ -362,6 +390,7 @@ function loadParticles(direction) {
             this.runAnimation && this.swipe()
 
         }
+        // Moves particles to new base location
         move(amount) { 
             this.particles.forEach(particle => {
                 if (amount == 0) {
@@ -374,6 +403,7 @@ function loadParticles(direction) {
                 
             })
         }
+        // Swipe accross screen animation (called each frame)
         swipe() {
             // Delay between animation loops
             if (this.animationFunctionCounter > 0) {
@@ -408,6 +438,7 @@ function loadParticles(direction) {
 
             return false
         }
+        // resizes canvas and removes and recreates particles
         reset() {
             
             resetCanvas()
@@ -415,63 +446,93 @@ function loadParticles(direction) {
             this.canvasHeight = window.innerHeight
             this.canvasWidth = window.innerWidth
 
-            this.placementY = (parseInt(this.pageTitle.getAttribute('data-y')) / 100) * this.canvasHeight
-            if (this.placementY < 40) this.placementY = 40
-
             if (this.canvasWidth < 768) {
-                this.fontSize = (this.canvasWidth / 100 ) * (this.providedFontSize * 1.75)
+                this.fontSize = ((this.canvasWidth / 100) * this.providedFontSize) * 1.5
+                this.maxTextWidth = 60
+                this.lineHeight = this.fontSize
                 this.mouse.radius = 1500
+                this.placementY = ((this.providedYVector / 100) * .9) * this.canvasHeight
+                
             } else {
-                this.fontSize = (this.canvasWidth / 100 ) * this.providedFontSize
+                this.fontSize = (this.canvasWidth / 100) * this.providedFontSize
+                this.lineHeight = this.fontSize
+                this.maxTextWidth = 80
                 this.mouse.radius = this.canvasWidth * 5
-            }
-            if (this.vector.y + (this.lineHeight / 2) > (this.canvasHeight / 100) * 45) {
-                this.fontSize *= .75
+                this.placementY = (this.providedYVector / 100) * this.canvasHeight
             }
 
             this.vector.x = (parseInt(this.pageTitle.getAttribute('data-x')) / 100) * this.canvasWidth,
             this.vector.y = this.placementY
-            
 
             this.wrapText()
 
+            stopped = false
         }
+        
     }
 
-    effect = new Effect({context: ctx, canvasWidth: canvas.width, canvasHeight: canvas.height, pageTitle, direction})
+    // creates main effect opbject
+    effect = new Effect({ context: ctx, canvasWidth: canvas.width, canvasHeight: canvas.height, pageTitle })
+    // Calls the function that begins the particle generation proccess.
     effect.wrapText()
-   
+    
+    // time that the previous frame was started
     let lastFrame = +new Date()
+    // How main times the speed of the animation has been checked
     let speedCheckCount = 0
 
+    // Counts for number of slow or fast frames reacured back to back
     let slowFrameCount = 0
     let fastFrameCount = 0
 
+    // Main animation loop
     function animate() {
-        if (!effect) return
-
-        if(!stopped || !this.basic) {
-            requestAnimationFrame(animate)
+        // If there is no effect object, the functon stops.
+        if (!effect) {            
+            return
         }
 
+        // If the animation has not been stopped and it has not been converted to basic, call the next frame
+        // Also sets animation loop id so the animation can be canceled when new page is loaded
+        if(!stopped && !this.basic) {
+            animationRequestID = requestAnimationFrame(animate)
+        } else {
+            cancelAnimationFrame(animationRequestID)
+        }
+
+        // reset last frame start time
         lastFrame = +new Date()
         
+        // Clears the current frame
         ctx.clearRect(0,0,canvas.width, canvas.height)
         
+        // Renders the next frame
         effect.render()
 
+        
+
+        // if currently changing particle count, stop function
         if (effect.scalingComplexity) return
 
+        // time it took to render this frame
         const animationTime = +new Date() - lastFrame
-        if (animationTime > 55 && !effect.basic) {
+        // Checks if the speed of the animation merits an increase or decrease in complexity
+        // If animation is slow
+        if (animationTime > 50 && !effect.basic) {
+            // If it has been slow for 8 consecutive frames
             if (slowFrameCount > 8) {
+                // Reduce complexity of animation
                 effect.setAnimationComplexity(-1)
             }
             fastFrameCount = 0
             slowFrameCount++
         } else {
+            // If animation is fast
+            // Will only be checked for the initial 100 frames
             if (animationTime < 6 && !effect.maxed && speedCheckCount < 100) {
+                // If animation has been fast for 10 frames
                 if (fastFrameCount > 10) {
+                    // Increase complexity of animation
                     effect.setAnimationComplexity(+1)
                 }
                 fastFrameCount++
@@ -480,10 +541,13 @@ function loadParticles(direction) {
         }
         speedCheckCount < 100 && speedCheckCount++
     }
-
+    // Initial animation function call
     animate()
 
+    // Resets canvas size
     function resetCanvas() {
+        canvas = document.getElementById('canvas')
+        
         canvas.height = window.innerHeight
         canvas.width = window.innerWidth
 
@@ -491,4 +555,44 @@ function loadParticles(direction) {
     }
 }
 
+// Initial call to create page particles
 loadParticles()
+
+function setStopButton() {
+    const stopButtons = document.querySelectorAll('.stopParticles')
+
+    stopButtons.forEach(button => {
+        button.classList.remove('d-none')
+
+        button.addEventListener('click', () => {
+            if (stopped) {
+                manualStopped = false
+                stopped = false
+                effect ? effect.basic = false : null
+
+                loadParticles()
+                effect.basic = false
+
+                if (button.classList.contains('desktop')) {
+                    button.children[0].innerHTML = 'Stop Particles'
+                    
+                } else {
+                    button.innerHTML = 'Stop Particles'
+                }
+                
+            } else {
+                manualStopped = true
+                stopped = true
+                effect.basic = true
+                if (button.classList.contains('desktop')) {
+                    button.children[0].innerHTML = 'Start Particles'
+                } else {
+                    button.innerHTML = 'Start Particles'
+                }
+            }
+        })
+    })
+
+   
+}
+setStopButton()

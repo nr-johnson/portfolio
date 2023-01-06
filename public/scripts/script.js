@@ -14,11 +14,6 @@ addToHistory(new URL(window.location).pathname)
 async function navigate(event, route) {
     if (!canNavigate) return
 
-    const loader = document.getElementById('loader')
-    let loadTimeout = setTimeout(() => {
-        loader.classList.add('loading')
-    }, 1000)
-    
     canNavigate = false
     const url = new URL(window.location)
 
@@ -28,6 +23,11 @@ async function navigate(event, route) {
         canNavigate = true
         return
     }
+
+    const loader = document.getElementById('loader')
+    let loadTimeout = setTimeout(() => {
+        loader.classList.add('loading')
+    }, 1000)
     
     const canvas = document.getElementById('canvas')
     const main = document.getElementById('main')
@@ -48,6 +48,9 @@ async function navigate(event, route) {
     newCanvas.style.transform = `translateX(${100 * pageSlideDirection}vw)`
     newMain.style.transform = `translateX(${100 * pageSlideDirection}vw)`
 
+    effect = null
+    stopped = true
+
     setSelectedLinks(route)
 
     window.setTimeout(async () => {
@@ -59,13 +62,12 @@ async function navigate(event, route) {
             body.removeChild(main)
             canvas && body.removeChild(canvas)
 
-            effect = null
+            
 
             body.insertBefore(newMain, body.children[0])
             body.insertBefore(newCanvas, body.children[body.children.length - 1])
 
-            console.log('navigating to: https://' + url.hostname + route)
-
+            loader.classList.remove('loading')
 
             const title = route.split('/').map(word => { return word.substring(0,1).toUpperCase() + word.substring(1) }).join(' ')
             document.title = title == ' ' ? 'Home' : title
@@ -78,6 +80,7 @@ async function navigate(event, route) {
             setLinkEvents()
             setScrollBarSize()
             enableEmailLink()
+            setTitlEffects()
 
             clearTimeout(loadTimeout)
             loader.classList.remove('loader')
@@ -91,7 +94,8 @@ async function navigate(event, route) {
             newMain.style.opacity = 1
             newMain.style.transform = 'translateX(0)'
             setPageRevealAnimations()
-            loadParticles()
+
+            if (!manualStopped) loadParticles()
         }).catch(err => {
             clearTimeout(loadTimeout)
             console.log(err)
@@ -211,6 +215,9 @@ function setLinkEvents() {
             e.preventDefault()
 
             const panel = document.getElementById(link.getAttribute('data-id'))
+
+            document.getElementById('body').append(panel)
+
             panel.classList.add('show')
             canNavigate = false
 
@@ -398,11 +405,12 @@ function revealItems() {
     animationParents.forEach(parent => {
         const animationChildren = parent.querySelectorAll('.animation-child')
         
+
         let leftIndex = 0
         let rightIndex = 0
         let prevBottom = null
 
-        animationChildren.forEach(el => {
+        animationChildren.forEach(el=> {
             const elementRect = el.getBoundingClientRect()
         
             if (prevBottom) {
@@ -418,19 +426,18 @@ function revealItems() {
             if (elementRect.left < window.innerWidth / 2) {
                 el.classList.add('left')
                 el.style.transitionDelay = `${.2 * leftIndex}s`
-                el.style.zIndex = -leftIndex
                 rightIndex = 0
                 leftIndex++
             } else {
                 el.classList.remove('left')
-                el.style.transitionDelay = `${.2 * rightIndex}s`
-                el.style.zIndex = -rightIndex
-                leftIndex = 0
+                el.style.transitionDelay = `${.2 * (leftIndex - 1)}s`
+                el.style.zIndex = leftIndex
+                leftIndex--
                 rightIndex++
             }
 
             setTimeout(() => {
-                if (elementRect.bottom - (elementRect.height / 4) < window.innerHeight) {
+                if (elementRect.top + (elementRect.height / 4) < window.innerHeight) {
                     el.classList.remove('hide')
                 } else if (elementRect.top > window.innerHeight) {
                     el.style.transitionDelay = 0
@@ -502,3 +509,35 @@ window.addEventListener('scroll', () => {
 window.addEventListener('touchstart', () => {
     setScrollBarSize()
 })
+
+function setTitlEffects() {
+    const itemsWithTiltEffect = document.querySelectorAll('.effect-tilt')
+    itemsWithTiltEffect.forEach(item => {
+        const shadow = item.querySelector('.shadow')
+        const center = item.classList.contains('center')
+        
+
+        item.addEventListener('mousemove', e => {
+            
+            if (item.parentNode.classList.contains('pageSelected')) return
+            
+            button = item.querySelector('.button')
+            const rect = item.getBoundingClientRect()
+            const mouseX = e.clientX - (rect.left + (rect.width / 2))
+            const percentX = (mouseX / (rect.width / 2)) * 100
+            const change = percentX / 60
+            
+            item.style.transform = `${center && 'translateX(-50%)'} skew(0,${change}deg)`
+            button.style.transform = `skew(0,${change}deg)`  
+            shadow.style.transform = `translate(${-change}%, 3px) skew(0,${-change}deg)`   
+
+        })
+        item.addEventListener('mouseout', () => {
+            item.style.transform = `${center && 'translateX(-50%)'} skew(0)`
+            button.style.transform = `skew(0)`  
+            shadow.style.transform = `skew(0)`  
+        })
+    })
+}
+setTitlEffects()
+

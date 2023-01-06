@@ -27,9 +27,12 @@ function siteOps() {
 
                     if(req.env !== 'development') error.stack = null // Prevents stack traces from being leaked to user.
 
-                    reject(pug.renderFile(`${pages}/error.pug`, {
-                        error: error
-                    }))
+                    reject({
+                        status: 404,
+                        html: pug.renderFile(`${pages}/error.pug`, {
+                            error: error
+                        })
+                    })
                 }
                 
 

@@ -48,14 +48,14 @@ app.get('*', async (req, res) => {
     }).catch(err => {
         if(parsedUrl.query.data) { 
             res.json({
-                html: err
+                html: err.html
             })
         } else {
             res.status(err.status || 500).render('main', {
                 title: `Error ${err.status || 500}`,
                 page: 'error',
                 pages: ['','portfolio','about','contact'],
-                html: err
+                html: err.html
             })
         }
         

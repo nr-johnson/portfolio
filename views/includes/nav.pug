@@ -7,10 +7,14 @@ nav#desktopNav(class='d-none d-md-block container-fluid py-2')
                     -deskLinkTitle = link.substring(0,1).toUpperCase() + link.substring(1)
                 if link == page
                     a(class='nav-item page-redir pageSelected' href='/' + link)
-                        span= deskLinkTitle
+                        div(class='effect-tilt')
+                            span(class='button')= deskLinkTitle
+                            span(class='shadow')
                 else 
                     a(class='nav-item page-redir' href='/' + link)
-                        span= deskLinkTitle
+                        div(class='effect-tilt')
+                            span(class='button')= deskLinkTitle
+                            span(class='shadow')
         div#desktopSelector(class='pageSelector selector')
 
 nav#mobileNav(class='d-md-none container-fluid')
@@ -35,6 +39,8 @@ nav#mobileNav(class='d-md-none container-fluid')
                     a(class='nav-item page-redir plain light' href='/' + link)
                         span= mobilekLinkTitle
         div#mobileSelector(class='selector')
+        hr
+        div(class='stopParticles') Stop Particles
 
 section#social 
     a(href="https://github.com/nr-johnson" target="_blank")
