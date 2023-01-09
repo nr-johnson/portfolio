@@ -566,29 +566,9 @@ function setStopButton() {
 
         button.addEventListener('click', () => {
             if (stopped) {
-                manualStopped = false
-                stopped = false
-                effect ? effect.basic = false : null
-
-                loadParticles()
-                effect.basic = false
-
-                if (button.classList.contains('desktop')) {
-                    button.children[0].innerHTML = 'Stop Particles'
-                    
-                } else {
-                    button.innerHTML = 'Stop Particles'
-                }
-                
+                restartParticles()
             } else {
-                manualStopped = true
-                stopped = true
-                effect.basic = true
-                if (button.classList.contains('desktop')) {
-                    button.children[0].innerHTML = 'Start Particles'
-                } else {
-                    button.innerHTML = 'Start Particles'
-                }
+                stopParticles(true)
             }
         })
     })
@@ -596,3 +576,38 @@ function setStopButton() {
    
 }
 setStopButton()
+
+function restartParticles() {
+    const stopButtons = document.querySelectorAll('.stopParticles')
+    stopButtons.forEach(button => {
+        manualStopped = false
+        stopped = false
+        effect ? effect.basic = false : null
+
+        loadParticles()
+        effect.basic = false
+
+        if (button.classList.contains('desktop')) {
+            button.children[0].innerHTML = 'Stop Particles'
+        } else {
+            button.innerHTML = 'Stop Particles'
+        }
+    })
+}
+
+function stopParticles(main) {
+    const stopButtons = document.querySelectorAll('.stopParticles')
+    stopButtons.forEach(button => {
+        if (manualStopped) return
+        
+        if (main) manualStopped = true
+
+        stopped = true
+        effect.basic = true
+        if (button.classList.contains('desktop')) {
+            button.children[0].innerHTML = 'Start Particles'
+        } else {
+            button.innerHTML = 'Start Particles'
+        }
+    })
+}

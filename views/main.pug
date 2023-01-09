@@ -8,19 +8,20 @@ html(lang="en")
         link(rel="stylesheet", href="/stylesheets/style.css")
         title= title || 'NRJohnson'
         
-        
         script(defer src='/scripts/script.js')
         script(defer src='/scripts/particles.js')
+        script(defer src='/scripts/invasion.js')
+    
     body#body(data-location=page)
         main#main
             | !{html}
         div#myScrollBar
         include includes/nav.pug
+        
         canvas#canvas
+        
         div#background
+        section#invasion(class='d-none')
+            canvas#invasionGame
         include includes/loader.pug
-        div(class='stopParticles desktop effect-tilt d-none')
-            div(class='button')
-                span Stop Particles
-            span(class='shadow')
         

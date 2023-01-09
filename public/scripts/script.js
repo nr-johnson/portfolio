@@ -17,6 +17,8 @@ async function navigate(event, route) {
     canNavigate = false
     const url = new URL(window.location)
 
+    !gameStopped && endGame()
+
     if(event) {
         event.preventDefault()
     } else if(url.pathname == route) {
@@ -221,17 +223,14 @@ function setLinkEvents() {
             panel.classList.add('show')
             canNavigate = false
 
-            const deskNav = document.getElementById('desktopNav')
-            const mobileNav = document.getElementById('mobileNav')
+            const navigation = document.getElementById('navigation')
 
-            deskNav.classList.add('fade')
-            mobileNav.classList.add('fade')
+            navigation.classList.add('fade')
 
             panel.querySelector('.background').addEventListener('click', e => {
                 e.preventDefault()
                 panel.classList.remove('show')
-                deskNav.classList.remove('fade')
-                mobileNav.classList.remove('fade')
+                navigation.classList.remove('fade')
                 canNavigate = true
             })
         })
@@ -512,6 +511,7 @@ window.addEventListener('touchstart', () => {
 
 function setTitlEffects() {
     const itemsWithTiltEffect = document.querySelectorAll('.effect-tilt')
+    
     itemsWithTiltEffect.forEach(item => {
         const shadow = item.querySelector('.shadow')
         const center = item.classList.contains('center')
@@ -520,8 +520,11 @@ function setTitlEffects() {
         item.addEventListener('mousemove', e => {
             
             if (item.parentNode.classList.contains('pageSelected')) return
+
+            shadow.classList.add('dropShadow')
             
             button = item.querySelector('.button')
+
             const rect = item.getBoundingClientRect()
             const mouseX = e.clientX - (rect.left + (rect.width / 2))
             const percentX = (mouseX / (rect.width / 2)) * 100
@@ -534,10 +537,10 @@ function setTitlEffects() {
         })
         item.addEventListener('mouseout', () => {
             item.style.transform = `${center && 'translateX(-50%)'} skew(0)`
-            button.style.transform = `skew(0)`  
+            button ? button.style.transform = `skew(0)` : null
             shadow.style.transform = `skew(0)`  
+            shadow.classList.remove('dropShadow')
         })
     })
 }
 setTitlEffects()
-

@@ -42,7 +42,7 @@ body {
     transition: .25s;
 }
 
-#canvas {
+canvas {
     position: absolute;
     top: 0;
     left: 0;
@@ -52,8 +52,44 @@ body {
     scroll-behavior: smooth;
         
 }
-#canvas::-webkit-scrollbar {
+canvas::-webkit-scrollbar {
     display: none;
+}
+#invasion {
+    position: absolute;
+    background-color: #141A26;
+    top: 55px;
+    left: 0;
+    height: calc(100% - 55px);
+    width: 100%;
+    cursor: none;
+    box-shadow: inset 0px 0 4px black;
+    z-index: 100;
+}
+#invasionCursor {
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    border: 1px solid var(--primary);
+    border-radius: 50%;
+    z-index: 100;
+    cursor: none;
+}
+#invasionCursor.shoot {
+    border-color: red;
+}
+#invasionCursor #point {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 2px;
+    width: 2px;
+    background: var(--primary);
+    border-radius: 50%;
+}
+#invasionCursor.shoot #point {
+    background: red;
 }
 
 #pageTitle {
@@ -209,6 +245,8 @@ a.plain.light {
     height: 2rem;
     border-radius: 2px;
     cursor: pointer;
+    text-align: center;
+    box-shadow: 0 0 2px #00000025;
     transition: .25s;
 }
 .button:hover {
@@ -230,6 +268,7 @@ a.plain.light {
     background-color: var(--primary);
 }
 .portfolio-resume-button {
+    line-height: 1;
     width: 100%;
 }
 
@@ -383,7 +422,7 @@ a.plain.light {
 
 #social {
     position: absolute;
-    top: .5rem;
+    top: .9rem;
     left: .5rem;
     height: 1.5rem;
     padding: 0;
@@ -702,6 +741,10 @@ a:hover {
     box-shadow: none !important;
 }
 
+.attention {
+    color: var(--accent) !important;
+}
+
 @media (min-width: 576px) {
     
 }
@@ -714,6 +757,9 @@ a:hover {
     }
     #pageError p {
         font-size: 2vw;
+    }
+    .button {
+        box-shadow: none;
     }
     .mobile-button {
         padding: initial;
@@ -745,9 +791,6 @@ a:hover {
     #pageTitle.home {
         font-size: 8vw;
     }
-    #scrollHint a {
-        color: var(--primary) !important;
-    }
     #homeHeader h1 {
         font-size: 21pt;
     }
@@ -770,7 +813,7 @@ a:hover {
     .stopParticles.desktop {
         position: absolute;
         display: block;
-        top: .25rem;
+        top: .6rem;
         left: 8rem;
         width: fit-content;
         text-align: center;
@@ -787,6 +830,8 @@ a:hover {
     }
     .effect-tilt:hover .button {
         background: var(--main);
+        color: var(--accent);
+        transition: none;
     }
     /* .pageSelected .effect-tilt:hover .button {
         background: transparent;
@@ -805,7 +850,7 @@ a:hover {
         left: 0;
         width: 100%;
         z-index: -1;
-        opacity: .5;
+        opacity: .7;
         box-shadow: none;
         height: 1.9rem;
     }
@@ -814,6 +859,12 @@ a:hover {
     }
     .pageSelected .effect-tilt:hover .shadow {
         background: transparent;
+    }
+    #startGame {
+        position: fixed;
+        bottom: 2rem;
+        left: 2rem;
+        z-index: 101;
     }
 }
 @media (min-width: 992px) {
